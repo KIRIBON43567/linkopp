@@ -95,7 +95,8 @@ export default {
           return Response.json({ success: false, message: 'Token 无效' }, { status: 401, headers: corsHeaders });
         }
 
-        const { message: userMessage, conversationHistory } = await request.json();
+        const body = await request.json() as { message: string; conversationHistory?: any[] };
+        const { message: userMessage, conversationHistory } = body;
         const database = new Database(env);
         const result = await chatWithAgent(database, decoded.userId, userMessage, conversationHistory || []);
         return Response.json({ success: true, ...result }, { headers: corsHeaders });
@@ -153,7 +154,7 @@ export default {
 
         const settings = await request.json();
         const database = new Database(env);
-        const result = await updateAutoSocialSettings(database, decoded.userId, settings);
+        const result = await updateAutoSocialSettings(database, decoded.userId, settings as any);
         return Response.json(result, { headers: corsHeaders });
       }
 
@@ -178,12 +179,13 @@ export default {
       // AI 对话 API
       if (path === '/api/ai/chat' && request.method === 'POST') {
         const data = await request.json();
-        const result = await chat(data);
+        const result = await chat(data as any);
         return Response.json(result, { headers: corsHeaders });
       }
 
       if (path === '/api/ai/onboarding' && request.method === 'POST') {
-        const { conversationHistory, currentStep } = await request.json();
+        const body2 = await request.json() as { conversationHistory: any[]; currentStep: number };
+        const { conversationHistory, currentStep } = body2;
         const result = await generateOnboardingMessage(conversationHistory, currentStep);
         return Response.json(result, { headers: corsHeaders });
       }
@@ -223,7 +225,8 @@ export default {
         }
 
         const data = await request.json();
-        const { company_name, role, industry, location, skills, resources, needs, bio, profile_completion } = data;
+        const profileData = data as any;
+        const { company_name, role, industry, location, skills, resources, needs, bio, profile_completion } = profileData;
 
         db.prepare(`
           UPDATE user_profiles 
@@ -281,7 +284,8 @@ export default {
           return Response.json({ success: false, message: 'Token 无效' }, { status: 401, headers: corsHeaders });
         }
 
-        const { targetId } = await request.json();
+        const matchBody = await request.json() as { targetId: number };
+        const { targetId } = matchBody;
 
         // 获取双方画像
         const user1Profile = db.prepare(`

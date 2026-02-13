@@ -7,14 +7,19 @@
 	"name": "linkopp-cloudflare",
 	"main": "worker/index.ts",
 	"compatibility_date": "2026-02-12",
-	"assets": {
-		"not_found_handling": "single-page-application"
-	},
+
 	"observability": {
 		"enabled": true
 	},
 	"compatibility_flags": [
 		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "linkopp_db",
+			"database_name": "linkopp-db",
+			"database_id": "e26ac7a8-0c01-4303-b7fc-4fc66a7ebbca"
+		}
 	]
 	/**
 	 * Smart Placement

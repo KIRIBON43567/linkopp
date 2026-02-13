@@ -65,3 +65,14 @@
 - [ ] 配置 Cloudflare Cron Triggers（定时任务调度）
 - [ ] 测试所有功能的完整流程
 - [ ] 优化性能和用户体验
+
+## 阶段 10: Cloudflare 全栈部署
+- [ ] 配置 Cloudflare API Token 认证
+- [ ] 创建 Cloudflare D1 数据库
+- [ ] 初始化数据库 Schema
+- [ ] 部署 Cloudflare Workers 后端
+- [ ] 构建前端生产版本
+- [ ] 部署 Cloudflare Pages 前端
+- [ ] 配置环境变量
+- [ ] 测试部署后的功能
+- [ ] 获取公网访问链接
