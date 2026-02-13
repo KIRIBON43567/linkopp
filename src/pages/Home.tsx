@@ -123,16 +123,22 @@ export default function Home() {
               <span className="text-2xl">🏠</span>
               <span className="text-xs">首页</span>
             </button>
-            <button className="flex flex-col items-center space-y-1 text-gray-400 hover:text-white">
+            <button 
+              onClick={() => navigate('/auto-social-settings')}
+              className="flex flex-col items-center space-y-1 text-gray-400 hover:text-white"
+            >
               <span className="text-2xl">✨</span>
-              <span className="text-xs">推荐</span>
+              <span className="text-xs">自动社交</span>
             </button>
             <button className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-3xl -mt-8">
               +
             </button>
-            <button className="flex flex-col items-center space-y-1 text-gray-400 hover:text-white">
-              <span className="text-2xl">💬</span>
-              <span className="text-xs">消息</span>
+            <button 
+              onClick={() => navigate('/agent-chat')}
+              className="flex flex-col items-center space-y-1 text-gray-400 hover:text-white"
+            >
+              <span className="text-2xl">🤖</span>
+              <span className="text-xs">Agent</span>
             </button>
             <button 
               onClick={handleLogout}

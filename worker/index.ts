@@ -1,6 +1,8 @@
-import { getDatabase } from './db/database';
+import { getDatabase, Database } from './db/database';
 import { register, login, verifyToken, getCurrentUser } from './api/auth';
 import { chat, generateOnboardingMessage, generateAgentMatchConversation } from './api/ai';
+import { chatWithAgent, getAgentStatus } from './api/agent';
+import { executeAutoSocial, getAutoSocialStats, updateAutoSocialSettings } from './api/autoSocial';
 
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
@@ -55,6 +57,100 @@ export default {
         }
 
         return Response.json({ success: true, user }, { headers: corsHeaders });
+      }
+
+      // Agent 对话 API
+      if (path === '/api/agent/chat' && request.method === 'POST') {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return Response.json({ success: false, message: '未授权' }, { status: 401, headers: corsHeaders });
+        }
+
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        
+        if (!decoded) {
+          return Response.json({ success: false, message: 'Token 无效' }, { status: 401, headers: corsHeaders });
+        }
+
+        const { message: userMessage, conversationHistory } = await request.json();
+        const database = new Database(env);
+        const result = await chatWithAgent(database, decoded.userId, userMessage, conversationHistory || []);
+        return Response.json({ success: true, ...result }, { headers: corsHeaders });
+      }
+
+      // 自动社交 API
+      if (path === '/api/auto-social/execute' && request.method === 'POST') {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return Response.json({ success: false, message: '未授权' }, { status: 401, headers: corsHeaders });
+        }
+
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        
+        if (!decoded) {
+          return Response.json({ success: false, message: 'Token 无效' }, { status: 401, headers: corsHeaders });
+        }
+
+        const database = new Database(env);
+        const result = await executeAutoSocial(database, decoded.userId);
+        return Response.json(result, { headers: corsHeaders });
+      }
+
+      if (path === '/api/auto-social/stats' && request.method === 'GET') {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return Response.json({ success: false, message: '未授权' }, { status: 401, headers: corsHeaders });
+        }
+
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        
+        if (!decoded) {
+          return Response.json({ success: false, message: 'Token 无效' }, { status: 401, headers: corsHeaders });
+        }
+
+        const database = new Database(env);
+        const stats = await getAutoSocialStats(database, decoded.userId);
+        return Response.json({ success: true, stats }, { headers: corsHeaders });
+      }
+
+      if (path === '/api/auto-social/settings' && request.method === 'PUT') {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return Response.json({ success: false, message: '未授权' }, { status: 401, headers: corsHeaders });
+        }
+
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        
+        if (!decoded) {
+          return Response.json({ success: false, message: 'Token 无效' }, { status: 401, headers: corsHeaders });
+        }
+
+        const settings = await request.json();
+        const database = new Database(env);
+        const result = await updateAutoSocialSettings(database, decoded.userId, settings);
+        return Response.json(result, { headers: corsHeaders });
+      }
+
+      if (path === '/api/agent/status' && request.method === 'GET') {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return Response.json({ success: false, message: '未授权' }, { status: 401, headers: corsHeaders });
+        }
+
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        
+        if (!decoded) {
+          return Response.json({ success: false, message: 'Token 无效' }, { status: 401, headers: corsHeaders });
+        }
+
+        const database = new Database(env);
+        const status = await getAgentStatus(database, decoded.userId);
+        return Response.json({ success: true, status }, { headers: corsHeaders });
       }
 
       // AI 对话 API

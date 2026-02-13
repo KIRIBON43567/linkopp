@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import BetterSqlite3 from 'better-sqlite3';
 import { join } from 'path';
 
 // 数据库接口，兼容 Cloudflare D1 和本地 SQLite
@@ -24,10 +24,10 @@ export interface RunResult {
 
 // 本地开发使用 SQLite
 class LocalDatabase implements DB {
-  private db: Database.Database;
+  private db: BetterSqlite3.Database;
 
   constructor(dbPath: string) {
-    this.db = new Database(dbPath);
+    this.db = new BetterSqlite3(dbPath);
     this.db.pragma('journal_mode = WAL');
   }
 
@@ -82,4 +82,42 @@ export function getDatabase(env?: any): DB {
   // 本地开发使用 SQLite
   const dbPath = join(process.cwd(), 'local.db');
   return new LocalDatabase(dbPath);
+}
+
+// Database 辅助类
+export class Database {
+  private db: DB;
+
+  constructor(env?: any) {
+    this.db = getDatabase(env);
+  }
+
+  async getUserByUsername(username: string): Promise<any> {
+    return this.db.prepare('SELECT * FROM users WHERE username = ?').bind(username).get();
+  }
+
+  async getUserById(userId: number): Promise<any> {
+    return this.db.prepare('SELECT * FROM users WHERE id = ?').bind(userId).get();
+  }
+
+  async getUserProfile(userId: number): Promise<any> {
+    return this.db.prepare('SELECT * FROM user_profiles WHERE user_id = ?').bind(userId).get();
+  }
+
+  async execute(query: string, params: any[] = []): Promise<any> {
+    const stmt = this.db.prepare(query);
+    const result = stmt.bind(...params).run();
+    return {
+      lastInsertRowid: result.meta?.last_row_id,
+      changes: result.meta?.changes
+    };
+  }
+
+  async query(query: string, params: any[] = []): Promise<any[]> {
+    return this.db.prepare(query).bind(...params).all();
+  }
+
+  getRawDB(): DB {
+    return this.db;
+  }
 }

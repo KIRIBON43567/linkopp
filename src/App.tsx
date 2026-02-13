@@ -3,6 +3,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Onboarding from './pages/Onboarding';
 import Home from './pages/Home';
+import AgentChat from './pages/AgentChat';
+import AutoSocialSettings from './pages/AutoSocialSettings';
 
 function App() {
   return (
@@ -12,6 +14,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/" element={<Home />} />
+        <Route path="/agent-chat" element={<AgentChat />} />
+        <Route path="/auto-social-settings" element={<AutoSocialSettings />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
