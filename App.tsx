@@ -6,6 +6,7 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { MatchDetailPage } from './pages/MatchDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MessagesPage } from './pages/MessagesPage';
+import { ScenarioPage } from './pages/ScenarioPage';
 
 const App: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ const App: React.FC = () => {
           <Route path="/match/:id" element={<MatchDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/scenarios" element={<ScenarioPage />} />
         </Routes>
       </HashRouter>
     </UserProvider>

@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MatchProfile } from '../types';
 import { BottomNav } from '../components/BottomNav';
 import { useUser } from '../contexts/UserContext';
+import { AIDashboard } from '../components/AIDashboard';
+import { getDashboardData } from '../services/dashboardService';
+import { AIDashboardData } from '../types/dashboard';
 
 const MOCK_MATCHES: MatchProfile[] = [
   {
@@ -40,6 +43,20 @@ const MOCK_MATCHES: MatchProfile[] = [
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
+  const [dashboardData, setDashboardData] = useState<AIDashboardData | null>(null);
+
+  useEffect(() => {
+    // 加载 AI 驾驶舱数据
+    const loadDashboard = async () => {
+      try {
+        const data = await getDashboardData(user.id);
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      }
+    };
+    loadDashboard();
+  }, [user.id]);
 
   return (
     <div className="min-h-screen bg-[#111827] text-white pb-20">
@@ -60,6 +77,11 @@ export const HomePage: React.FC = () => {
                 <img src={user.avatar} className="w-full h-full object-cover" alt="User" />
             </div>
         </div>
+      </div>
+
+      {/* AI Dashboard */}
+      <div className="px-6">
+        {dashboardData && <AIDashboard data={dashboardData} />}
       </div>
 
       <div className="px-6 mb-6">
@@ -137,9 +159,12 @@ export const HomePage: React.FC = () => {
         ))}
       </div>
 
-      {/* Floating Action Button (FAB) from screenshot */}
+      {/* Floating Action Button (FAB) - 场景选择 */}
       <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-40 animate-slide-up delay-300">
-        <button className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/40 hover:scale-105 transition-transform text-white">
+        <button 
+          onClick={() => navigate('/scenarios')}
+          className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/40 hover:scale-105 transition-transform text-white"
+        >
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
         </button>
       </div>
