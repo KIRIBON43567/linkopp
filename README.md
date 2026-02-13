@@ -2,78 +2,75 @@
 
 > AI Native OPC 社群智能匹配平台
 
-## 项目简介
+一个真正的 AI Native 产品，让你的 AI Agent 代表你自动寻找合作伙伴，建立有价值的连接。
 
-AI链机（LINKOPP）是一个为 OPC（一人公司）社群打造的 AI 驱动智能匹配平台。通过 AI Agent 自动对话和智能分析，帮助社群成员发现合作机会和资源互补。
+## 🌟 核心特性
 
-### 核心特性
+### 1. AI 引导式信息采集
+- 通过自然对话完成个人画像构建
+- 三阶段采集：基本信息、技能资源、需求目标
+- 智能提取关键信息，无需填写表单
 
-- 🤖 **AI Native 交互**: 对话式信息采集，自然语言优先
-- 🔗 **智能匹配**: AI Agent 自动对话，分析合作潜力
-- 📊 **深度分析**: 匹配度评分、需求满足度、技能互补性分析
-- 📱 **移动优先**: 响应式设计，完美适配手机端
-- ⚡ **极速部署**: Cloudflare 全栈，全球 CDN 加速
+### 2. 用户与 Agent 对话 🆕
+- **与自己的 AI Agent 对话**，像和朋友聊天一样
+- 通过对话更新个人画像（技能、资源、需求）
+- 通过对话设置社交策略（频率、偏好）
+- Agent 理解你的意图并自动执行
 
-## 技术栈
+### 3. Agent 自动社交 🆕
+- **每天自动匹配**指定数量的合适人选（上限 10 次）
+- 智能推荐算法：基于画像相似度和需求互补性
+- 自动执行 Agent 对话和匹配分析
+- 实时统计：今日已用次数、总匹配数、成功率
 
-- **前端**: React 19 + TypeScript + Tailwind CSS
-- **后端**: Cloudflare Workers
-- **数据库**: Cloudflare D1 (SQLite)
-- **AI**: VectorEngine AI (Gemini 3 Flash/Pro)
-- **认证**: JWT + bcryptjs
+### 4. AI Agent 一对一匹配
+- 双方 Agent 自动进行 5-8 轮对话
+- 探索合作可能性和资源互补度
+- 生成详细的匹配分析报告
 
-## 快速开始
+### 5. 智能匹配分析
+- 匹配度评分（0-100）
+- 需求满足度、技能互补性、合作意愿分析
+- 协作领域识别、潜在合作方向建议
 
-### 本地开发
+## 🚀 快速开始
 
-```bash
+\`\`\`bash
 # 安装依赖
-npm install
-
-# 配置环境变量（创建 .dev.vars 文件）
-VECTORENGINE_API_KEY=your-api-key
-JWT_SECRET=your-secret-key
+pnpm install
 
 # 初始化数据库
 npx tsx worker/db/init.ts
 
-# 启动开发服务器
-npm run dev
-```
+# 启动开发
+pnpm dev
+\`\`\`
 
-### 部署到 Cloudflare
+## 📁 项目结构
 
-详见 [DEPLOYMENT.md](./DEPLOYMENT.md)
+\`\`\`
+src/pages/          # 前端页面
+  ├── AgentChat.tsx          # 用户与 Agent 对话 🆕
+  ├── AutoSocialSettings.tsx # 自动社交设置 🆕
+  └── ...
+worker/api/         # 后端 API
+  ├── agent.ts               # Agent 对话 API 🆕
+  ├── autoSocial.ts          # 自动社交 API 🆕
+  └── ...
+\`\`\`
 
-## 功能模块
+## 🔌 新增 API 端点
 
-1. **用户认证** - 账号密码注册/登录，JWT Token 认证
-2. **AI 信息采集** - 多轮对话式引导，智能问题生成
-3. **用户画像** - 公司信息、技能资源、需求目标管理
-4. **智能推荐** - AI 驱动的匹配算法，个性化推荐
-5. **Agent 匹配** - 双 Agent 自动对话，深度分析合作潜力
-6. **对话记录** - 完整对话历史，匹配结果详情
+- \`POST /api/agent/chat\` - 与 Agent 对话
+- \`GET /api/agent/status\` - 获取 Agent 状态
+- \`POST /api/auto-social/execute\` - 立即执行自动社交
+- \`GET /api/auto-social/stats\` - 获取统计数据
+- \`PUT /api/auto-social/settings\` - 更新设置
 
-## 项目结构
-
-```
-linkopp-cloudflare/
-├── src/                    # 前端源码
-│   ├── pages/             # 页面组件
-│   ├── utils/             # 工具函数
-│   └── App.tsx            # 应用入口
-├── worker/                 # 后端源码
-│   ├── api/               # API 模块
-│   ├── db/                # 数据库
-│   └── index.ts           # Worker 入口
-├── wrangler.jsonc         # Cloudflare 配置
-└── package.json           # 项目配置
-```
-
-## 许可证
+## 📝 许可证
 
 MIT License
 
 ---
 
-Made with ❤️ for OPC Community
+**AI链机 LINKOPP** - 让 AI Agent 为你建立有价值的连接 🤖✨
