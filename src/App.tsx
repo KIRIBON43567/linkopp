@@ -5,6 +5,7 @@ import Onboarding from './pages/Onboarding';
 import Home from './pages/Home';
 import AgentChat from './pages/AgentChat';
 import AutoSocialSettings from './pages/AutoSocialSettings';
+import MatchDetail from './pages/MatchDetail';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/agent-chat" element={<AgentChat />} />
         <Route path="/auto-social-settings" element={<AutoSocialSettings />} />
+        <Route path="/match/:id" element={<MatchDetail />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

@@ -3,6 +3,7 @@ import { register, login, verifyToken, getCurrentUser } from './api/auth';
 import { chat, generateOnboardingMessage, generateAgentMatchConversation } from './api/ai';
 import { chatWithAgent, getAgentStatus } from './api/agent';
 import { executeAutoSocial, getAutoSocialStats, updateAutoSocialSettings } from './api/autoSocial';
+import { RecommendationEngine } from './api/recommendation';
 
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
@@ -57,6 +58,27 @@ export default {
         }
 
         return Response.json({ success: true, user }, { headers: corsHeaders });
+      }
+
+      // 推荐 API
+      if (path === '/api/recommendations' && request.method === 'GET') {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return Response.json({ success: false, message: '未授权' }, { status: 401, headers: corsHeaders });
+        }
+
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        
+        if (!decoded) {
+          return Response.json({ success: false, message: '令牌无效' }, { status: 401, headers: corsHeaders });
+        }
+
+        const engine = new RecommendationEngine(db);
+        const limit = parseInt(url.searchParams.get('limit') || '10');
+        const recommendations = await engine.getRecommendations(decoded.userId, limit);
+        
+        return Response.json({ success: true, recommendations }, { headers: corsHeaders });
       }
 
       // Agent 对话 API

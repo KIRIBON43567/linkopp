@@ -35,6 +35,25 @@ export default function Onboarding() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const saveUserProfile = async (messages: Message[]) => {
+    try {
+      // 从对话中提取关键信息
+      const conversationText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
+      
+      // 调用 API 保存用户画像
+      const result = await api.updateProfile({
+        conversationText,
+        completed: true
+      });
+      
+      if (result.success) {
+        console.log('用户画像保存成功');
+      }
+    } catch (error) {
+      console.error('Failed to save user profile:', error);
+    }
+  };
+
   const initConversation = async () => {
     setLoading(true);
     try {
@@ -72,6 +91,13 @@ export default function Onboarding() {
           setCurrentStep('skills');
         } else if (newProgress >= 60 && currentStep === 'skills') {
           setCurrentStep('needs');
+        } else if (newProgress >= 90 && currentStep === 'needs') {
+          // 信息采集完成，保存用户画像
+          await saveUserProfile(newMessages);
+          setProgress(100);
+          setTimeout(() => {
+            navigate('/');
+          }, 1500);
         }
       }
     } catch (error: any) {
