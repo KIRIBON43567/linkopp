@@ -1,73 +1,79 @@
-# React + TypeScript + Vite
+# AI链机 LINKOPP
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> AI Native OPC 社群智能匹配平台
 
-Currently, two official plugins are available:
+## 项目简介
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+AI链机（LINKOPP）是一个为 OPC（一人公司）社群打造的 AI 驱动智能匹配平台。通过 AI Agent 自动对话和智能分析，帮助社群成员发现合作机会和资源互补。
 
-## React Compiler
+### 核心特性
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 🤖 **AI Native 交互**: 对话式信息采集，自然语言优先
+- 🔗 **智能匹配**: AI Agent 自动对话，分析合作潜力
+- 📊 **深度分析**: 匹配度评分、需求满足度、技能互补性分析
+- 📱 **移动优先**: 响应式设计，完美适配手机端
+- ⚡ **极速部署**: Cloudflare 全栈，全球 CDN 加速
 
-## Expanding the ESLint configuration
+## 技术栈
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **前端**: React 19 + TypeScript + Tailwind CSS
+- **后端**: Cloudflare Workers
+- **数据库**: Cloudflare D1 (SQLite)
+- **AI**: VectorEngine AI (Gemini 3 Flash/Pro)
+- **认证**: JWT + bcryptjs
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 快速开始
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 本地开发
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# 安装依赖
+npm install
+
+# 配置环境变量（创建 .dev.vars 文件）
+VECTORENGINE_API_KEY=your-api-key
+JWT_SECRET=your-secret-key
+
+# 初始化数据库
+npx tsx worker/db/init.ts
+
+# 启动开发服务器
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 部署到 Cloudflare
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+详见 [DEPLOYMENT.md](./DEPLOYMENT.md)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 功能模块
+
+1. **用户认证** - 账号密码注册/登录，JWT Token 认证
+2. **AI 信息采集** - 多轮对话式引导，智能问题生成
+3. **用户画像** - 公司信息、技能资源、需求目标管理
+4. **智能推荐** - AI 驱动的匹配算法，个性化推荐
+5. **Agent 匹配** - 双 Agent 自动对话，深度分析合作潜力
+6. **对话记录** - 完整对话历史，匹配结果详情
+
+## 项目结构
+
 ```
+linkopp-cloudflare/
+├── src/                    # 前端源码
+│   ├── pages/             # 页面组件
+│   ├── utils/             # 工具函数
+│   └── App.tsx            # 应用入口
+├── worker/                 # 后端源码
+│   ├── api/               # API 模块
+│   ├── db/                # 数据库
+│   └── index.ts           # Worker 入口
+├── wrangler.jsonc         # Cloudflare 配置
+└── package.json           # 项目配置
+```
+
+## 许可证
+
+MIT License
+
+---
+
+Made with ❤️ for OPC Community
