@@ -9,7 +9,7 @@ const client = new OpenAI({
 });
 
 // 默认使用 Gemini Flash 3（快速、低成本）
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = 'gemini-3-flash-preview';
 
 // 生成 Onboarding 对话响应
 export const generateOnboardingResponse = async (
