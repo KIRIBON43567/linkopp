@@ -8,6 +8,7 @@ import { MatchDetailPage } from './pages/MatchDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MessagesPage } from './pages/MessagesPage';
 import { ScenarioPage } from './pages/ScenarioPage';
+import { CommunicationReportPage } from './pages/CommunicationReportPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -41,6 +42,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
       <Route path="/scenarios" element={<ProtectedRoute><ScenarioPage /></ProtectedRoute>} />
+      <Route path="/communication/:id" element={<ProtectedRoute><CommunicationReportPage /></ProtectedRoute>} />
     </Routes>
   );
 };

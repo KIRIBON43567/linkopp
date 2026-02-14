@@ -5,7 +5,7 @@ import { BottomNav } from '../components/BottomNav';
 import { useUser } from '../contexts/UserContext';
 import { AIDashboard } from '../components/AIDashboard';
 import { AIDashboardData } from '../types/dashboard';
-import { matchesAPI, dashboardAPI } from '../src/services/apiClient';
+import { matchesAPI, dashboardAPI, autoCommunicationsAPI } from '../src/services/apiClient';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -13,53 +13,132 @@ export const HomePage: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<AIDashboardData | null>(null);
   const [matches, setMatches] = useState<MatchProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dispatchingId, setDispatchingId] = useState<string | null>(null);
+  const [showProgress, setShowProgress] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [currentCommId, setCurrentCommId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [user.id]);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  const handleDispatch = async (matchId: string, agentId: string) => {
+    try {
+      setDispatchingId(matchId);
+      
+      // Dispatch AI Agent
+      const result = await autoCommunicationsAPI.dispatch({
+        match_id: matchId,
+        agent_id: agentId
+      });
+
+      setCurrentCommId(result.id);
+      setShowProgress(true);
+      setProgress(0);
+      setProgressMessage('准备开始沟通...');
+
+      // Start polling for progress
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await autoCommunicationsAPI.getStatus(result.id);
+          setProgress(status.progress || 0);
+          setProgressMessage(status.message || '');
+
+          if (status.status === 'completed') {
+            clearInterval(pollInterval);
+            setShowProgress(false);
+            setDispatchingId(null);
+            // Navigate to report page
+            navigate(`/communication/${result.id}`);
+          } else if (status.status === 'failed') {
+            clearInterval(pollInterval);
+            setShowProgress(false);
+            setDispatchingId(null);
+            alert('沟通失败，请重试');
+          }
+        } catch (err) {
+          console.error('Poll error:', err);
+        }
+      }, 3000);
+
+      // Cleanup on unmount
+      return () => clearInterval(pollInterval);
+    } catch (error: any) {
+      console.error('Dispatch error:', error);
+      setDispatchingId(null);
+      alert(error.message || '派遣失败，请重试');
+    }
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       // 加载驾驶舱数据
-      const statsResult = await dashboardAPI.getStats();
-      const insightsResult = await dashboardAPI.getInsights();
-      
-      setDashboardData({
-        stats: {
-          opportunitiesExplored: statsResult.stats.opportunities_explored || 0,
-          conversationsHeld: statsResult.stats.conversations_held || 0,
-          highPriorityMatches: statsResult.stats.high_priority_matches || 0,
-          meetingsScheduled: statsResult.stats.meetings_scheduled || 0,
-        },
-        insights: insightsResult.insights || []
-      });
-
-      // 加载匹配数据
-      let matchesResult = await matchesAPI.list({ limit: 20 });
-      
-      // 如果没有匹配记录，先计算匹配
-      if (!matchesResult.matches || matchesResult.matches.length === 0) {
-        await matchesAPI.calculate();
-        matchesResult = await matchesAPI.list({ limit: 20 });
+      try {
+        const [statsResult, insightsResult] = await Promise.all([
+          dashboardAPI.getStats(),
+          dashboardAPI.getInsights()
+        ]);
+        
+        setDashboardData({
+          stats: {
+            opportunitiesExplored: statsResult.stats?.opportunities_explored || 0,
+            conversationsHeld: statsResult.stats?.conversations_held || 0,
+            highPriorityMatches: statsResult.stats?.high_priority_matches || 0,
+            meetingsScheduled: statsResult.stats?.meetings_scheduled || 0,
+          },
+          insights: insightsResult.insights || []
+        });
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+        // 使用默认数据
+        setDashboardData({
+          stats: {
+            opportunitiesExplored: 0,
+            conversationsHeld: 0,
+            highPriorityMatches: 0,
+            meetingsScheduled: 0,
+          },
+          insights: []
+        });
       }
 
-      // 转换为前端格式
-      const formattedMatches: MatchProfile[] = matchesResult.matches.map((m: any) => ({
-        id: m.id,
-        name: m.name,
-        role: m.agent_role || m.role,
-        company: m.agent_company || m.company,
-        avatar: m.agent_avatar || 'https://picsum.photos/200/200',
-        matchScore: m.match_score,
-        insight: m.match_reason || '高度匹配',
-        status: m.status || 'new'
-      }));
+      // 加载匹配数据
+      try {
+        let matchesResult = await matchesAPI.list({ limit: 20 });
+        
+        // 如果没有匹配记录，先计算匹配
+        if (!matchesResult.matches || matchesResult.matches.length === 0) {
+          await matchesAPI.calculate();
+          matchesResult = await matchesAPI.list({ limit: 20 });
+        }
 
-      setMatches(formattedMatches);
-    } catch (error) {
+        // 转换为前端格式
+        const formattedMatches: MatchProfile[] = matchesResult.matches.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          role: m.agent_role || m.role,
+          company: m.agent_company || m.company,
+          avatar: m.agent_avatar || 'https://picsum.photos/200/200',
+          matchScore: m.match_score,
+          insight: m.match_reason || '高度匹配',
+          status: m.status || 'new'
+        }));
+
+        setMatches(formattedMatches);
+      } catch (err: any) {
+        console.error('Failed to load matches:', err);
+        setError('加载匹配数据失败，请刷新重试');
+      }
+    } catch (error: any) {
       console.error('Failed to load data:', error);
+      setError(error.message || '加载失败，请刷新重试');
     } finally {
       setLoading(false);
     }
@@ -71,6 +150,25 @@ export const HomePage: React.FC = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#111827] text-white flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-gray-300 mb-4">{error}</p>
+          <button 
+            onClick={loadData}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+          >
+            重试
+          </button>
         </div>
       </div>
     );
@@ -91,8 +189,8 @@ export const HomePage: React.FC = () => {
                 <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                 <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
             </button>
-            <div className="w-8 h-8 rounded-full bg-yellow-200 overflow-hidden border border-white/20" onClick={() => navigate('/profile')}>
-                <img src={user.avatar} className="w-full h-full object-cover" alt="User" />
+            <div className="w-8 h-8 rounded-full bg-yellow-200 overflow-hidden border border-white/20 cursor-pointer" onClick={() => navigate('/profile')}>
+                <img src={user?.avatar || 'https://picsum.photos/200/200'} className="w-full h-full object-cover" alt="User" />
             </div>
         </div>
       </div>
@@ -117,10 +215,10 @@ export const HomePage: React.FC = () => {
           <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
           </svg>
-          <p className="text-gray-400">暂无匹配推荐</p>
+          <p className="text-gray-400 mb-4">暂无匹配推荐</p>
           <button 
             onClick={loadData}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             重新计算匹配
           </button>
@@ -183,10 +281,29 @@ export const HomePage: React.FC = () => {
                   }}
                   className="bg-[#374151] hover:bg-[#4B5563] text-white py-3 rounded-lg text-sm font-semibold transition-colors"
                 >
-                  查看对话
+                  查看详情
                 </button>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm font-semibold transition-colors">
-                  立即连接
+                <button 
+                  onClick={(e) => {
+                      e.stopPropagation();
+                      handleDispatch(match.id, match.id.replace('match_', 'agent_'));
+                  }}
+                  disabled={dispatchingId === match.id}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  {dispatchingId === match.id ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>派遣中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      <span>派遣 AI 沟通</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -203,6 +320,48 @@ export const HomePage: React.FC = () => {
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
         </button>
       </div>
+
+      {/* Progress Modal */}
+      {showProgress && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-6">
+          <div className="bg-[#1F2937] rounded-2xl p-8 max-w-md w-full border border-gray-700">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-blue-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              
+              <h3 className="text-xl font-bold text-white mb-2">AI Agent 沟通中...</h3>
+              <p className="text-gray-400 text-sm mb-6">{progressMessage}</p>
+
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-700 rounded-full h-3 mb-4 overflow-hidden">
+                <div 
+                  className="bg-blue-500 h-full transition-all duration-500 ease-out rounded-full"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <p className="text-blue-400 font-semibold mb-6">{progress}%</p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowProgress(false)}
+                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  后台运行
+                </button>
+                <button
+                  onClick={() => currentCommId && navigate(`/communication/${currentCommId}`)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  查看实时进度
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>

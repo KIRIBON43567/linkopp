@@ -152,3 +152,25 @@ export const dashboardAPI = {
     return apiFetch('/dashboard/insights');
   },
 };
+
+// Auto Communications API
+export const autoCommunicationsAPI = {
+  dispatch: async (data: { match_id: string; agent_id: string }) => {
+    return apiFetch('/auto-communications/dispatch', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getStatus: async (id: string) => {
+    return apiFetch(`/auto-communications/${id}`);
+  },
+
+  getReport: async (id: string) => {
+    return apiFetch(`/auto-communications/${id}/report`);
+  },
+
+  list: async () => {
+    return apiFetch('/auto-communications');
+  },
+};
