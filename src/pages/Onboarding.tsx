@@ -1,30 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../utils/api';
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: 'ai' | 'user';
   content: string;
 }
+
+const quickReplies = [
+  '寻找开发者',
+  '寻求营销方案',
+  '找投资人',
+  '寻找合伙人'
+];
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState<'basic' | 'skills' | 'needs'>('basic');
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [progress, setProgress] = useState(30);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const quickReplies = {
-    basic: ['互联网', '金融', '教育', '医疗'],
-    skills: ['技术开发', 'UI/UX设计', 'SaaS框架', '产品管理'],
-    needs: ['寻找开发者', '寻求营销方案', '找投资人', '寻找合伙人'],
-  };
-
   useEffect(() => {
-    // 初始化对话
-    initConversation();
+    // 初始化第一条消息
+    setMessages([
+      {
+        role: 'ai',
+        content: '你好！我是你的AI经纪人。为了帮你精准匹配合作伙伴，能告诉我你目前最核心的需求是什么吗？'
+      }
+    ]);
   }, []);
 
   useEffect(() => {
@@ -35,120 +39,61 @@ export default function Onboarding() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const saveUserProfile = async (messages: Message[]) => {
-    try {
-      // 从对话中提取关键信息
-      const conversationText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
-      
-      // 调用 API 保存用户画像
-      const result = await api.updateProfile({
-        conversationText,
-        completed: true
-      });
-      
-      if (result.success) {
-        console.log('用户画像保存成功');
-      }
-    } catch (error) {
-      console.error('Failed to save user profile:', error);
-    }
-  };
+  const handleSend = (text: string) => {
+    if (!text.trim()) return;
 
-  const initConversation = async () => {
-    setLoading(true);
-    try {
-      const result = await api.onboardingChat([], 'basic');
-      if (result.success && result.message) {
-        setMessages([{ role: 'assistant', content: result.message }]);
-      }
-    } catch (error) {
-      console.error('Failed to init conversation:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // 添加用户消息
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setInputValue('');
+    setIsTyping(true);
 
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || loading) return;
-
-    const userMessage: Message = { role: 'user', content };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const result = await api.onboardingChat(newMessages, currentStep);
-      if (result.success && result.message) {
-        setMessages([...newMessages, { role: 'assistant', content: result.message }]);
-        
-        // 更新进度
-        const newProgress = Math.min(progress + 15, 90);
-        setProgress(newProgress);
-
-        // 切换阶段
-        if (newProgress >= 30 && currentStep === 'basic') {
-          setCurrentStep('skills');
-        } else if (newProgress >= 60 && currentStep === 'skills') {
-          setCurrentStep('needs');
-        } else if (newProgress >= 90 && currentStep === 'needs') {
-          // 信息采集完成，保存用户画像
-          await saveUserProfile(newMessages);
-          setProgress(100);
-          setTimeout(() => {
-            navigate('/');
-          }, 1500);
-        }
-      }
-    } catch (error: any) {
-      console.error('Failed to send message:', error);
-      setMessages([...newMessages, { role: 'assistant', content: '抱歉，我遇到了一些问题，请稍后再试。' }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    sendMessage(input);
+    // 模拟 AI 回复
+    setTimeout(() => {
+      setIsTyping(false);
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        content: '很好！我已经记录了你的需求。接下来，能分享一下你目前拥有的核心技能和资源吗？这将帮助我找到最合适的合作伙伴。'
+      }]);
+      setProgress(prev => Math.min(prev + 20, 100));
+    }, 1500);
   };
 
   const handleQuickReply = (reply: string) => {
-    sendMessage(reply);
-  };
-
-  const handleSkip = () => {
-    navigate('/');
+    handleSend(reply);
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* 顶部 */}
-      <div className="bg-[var(--bg-card)] border-b border-[var(--border-color)] p-4">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#F5F7FA] flex flex-col">
+      {/* 顶部导航 */}
+      <header className="bg-white border-b border-gray-200 px-4 py-4">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-              <span className="text-lg font-bold text-white">链</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-[#2196F3] to-[#1976D2] rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
             </div>
-            <span className="text-lg font-semibold text-white">LinkMech</span>
+            <span className="text-xl font-bold text-gray-800">LinkMech</span>
           </div>
           <button
-            onClick={handleSkip}
-            className="text-gray-400 hover:text-white transition-colors"
+            onClick={() => navigate('/')}
+            className="text-sm text-gray-500 hover:text-gray-700 font-medium"
           >
             跳过
           </button>
         </div>
+      </header>
 
-        {/* 进度条 */}
-        <div className="max-w-4xl mx-auto mt-4">
+      {/* 进度条 */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-400">信息完善度</span>
-            <span className="text-sm font-semibold text-blue-400">{progress}%</span>
+            <span className="text-xs text-gray-500 font-medium">信息完善度</span>
+            <span className="text-sm text-[#2196F3] font-bold">{progress}%</span>
           </div>
-          <div className="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-[#2196F3] to-[#1976D2] rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -156,45 +101,50 @@ export default function Onboarding() {
       </div>
 
       {/* 对话区域 */}
-      <div className="flex-1 overflow-y-auto p-4 pb-32">
-        <div className="max-w-4xl mx-auto space-y-4">
-          {messages.map((message, index) => (
+      <main className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="max-w-lg mx-auto space-y-4">
+          {messages.map((msg, index) => (
             <div
               key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
             >
-              {message.role === 'assistant' && (
-                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3 flex-shrink-0">
-                  <span className="text-white text-lg">🤖</span>
+              {msg.role === 'ai' && (
+                <div className="flex items-start space-x-3 max-w-[80%]">
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#2196F3] to-[#1976D2] rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                      <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                    </svg>
+                  </div>
+                  <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                    <p className="text-sm text-gray-800 leading-relaxed">{msg.content}</p>
+                  </div>
                 </div>
               )}
-              <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                  message.role === 'user'
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                    : 'bg-[var(--bg-card)] text-white border border-[var(--border-color)]'
-                }`}
-              >
-                {message.content}
-              </div>
-              {message.role === 'user' && (
-                <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center ml-3 flex-shrink-0">
-                  <span className="text-white text-lg">👤</span>
+              {msg.role === 'user' && (
+                <div className="bg-gradient-to-br from-[#2196F3] to-[#1976D2] rounded-2xl rounded-br-sm px-4 py-3 shadow-sm max-w-[80%]">
+                  <p className="text-sm text-white leading-relaxed">{msg.content}</p>
                 </div>
               )}
             </div>
           ))}
 
-          {loading && (
-            <div className="flex justify-start">
-              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
-                <span className="text-white text-lg">🤖</span>
-              </div>
-              <div className="bg-[var(--bg-card)] px-4 py-3 rounded-2xl border border-[var(--border-color)]">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          {/* 加载动画 */}
+          {isTyping && (
+            <div className="flex justify-start animate-fade-in">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-[#2196F3] to-[#1976D2] rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                    <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                  </svg>
+                </div>
+                <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -202,53 +152,52 @@ export default function Onboarding() {
 
           <div ref={messagesEndRef} />
         </div>
-      </div>
+      </main>
 
-      {/* 输入区域 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t border-[var(--border-color)] p-4">
-        <div className="max-w-4xl mx-auto">
+      {/* 底部输入区 */}
+      <div className="bg-white border-t border-gray-200 px-4 py-4">
+        <div className="max-w-lg mx-auto">
           {/* 快速回复 */}
-          {quickReplies[currentStep].length > 0 && (
-            <div className="mb-3">
-              <p className="text-xs text-gray-400 mb-2">点击快速回复</p>
-              <div className="flex flex-wrap gap-2">
-                {quickReplies[currentStep].map((reply) => (
-                  <button
-                    key={reply}
-                    onClick={() => handleQuickReply(reply)}
-                    className="px-4 py-2 rounded-full bg-[var(--bg-secondary)] text-white text-sm hover:bg-[var(--border-color)] transition-colors"
-                  >
-                    {reply}
-                  </button>
-                ))}
-              </div>
+          <div className="mb-4">
+            <p className="text-xs text-gray-400 mb-2">点击快速回复</p>
+            <div className="flex flex-wrap gap-2">
+              {quickReplies.map((reply, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleQuickReply(reply)}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-50 hover:border-[#2196F3] hover:text-[#2196F3] transition-all"
+                >
+                  {reply}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
 
           {/* 输入框 */}
-          <form onSubmit={handleSubmit} className="flex items-center space-x-2">
-            <button
-              type="button"
-              className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-            >
-              🎤
+          <div className="flex items-center space-x-2">
+            <button className="p-2 text-gray-400 hover:text-gray-600">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+              </svg>
             </button>
             <input
               type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSend(inputValue)}
               placeholder="输入你的需求或选择上方选项..."
-              className="flex-1 px-4 py-3 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={loading}
+              className="flex-1 bg-[#F5F7FA] border-0 rounded-full px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2196F3]"
             />
             <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => handleSend(inputValue)}
+              disabled={!inputValue.trim()}
+              className="w-12 h-12 bg-gradient-to-br from-[#2196F3] to-[#1976D2] rounded-full flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all"
             >
-              ➤
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
             </button>
-          </form>
+          </div>
         </div>
       </div>
     </div>

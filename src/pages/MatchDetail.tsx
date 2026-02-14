@@ -1,250 +1,248 @@
-import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api } from '../utils/api';
 
-interface MatchDetail {
-  id: number;
-  targetUser: {
-    id: number;
-    username: string;
-    company?: string;
-    position?: string;
-  };
-  conversation: Array<{
-    agent: string;
-    message: string;
-  }>;
-  analysis: {
-    matchScore: number;
-    needsFulfillment: number;
-    skillComplementarity: number;
-    collaborationWillingness: number;
-    collaborationAreas: string[];
-    potentialDirections: string[];
-    strengths: string[];
-  };
-  createdAt: string;
+interface ConversationMessage {
+  agent: string;
+  content: string;
 }
 
 export default function MatchDetail() {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const [match, setMatch] = useState<MatchDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { id } = useParams();
 
-  useEffect(() => {
-    loadMatchDetail();
-  }, [id]);
-
-  const loadMatchDetail = async () => {
-    try {
-      const result = await api.getMatchDetail(Number(id));
-      if (result.success && result.match) {
-        setMatch(result.match);
+  const matchData = {
+    agentA: {
+      name: 'ALPHA-9',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AgentA',
+      color: '#2196F3'
+    },
+    agentB: {
+      name: 'BETA-CORE',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AgentB',
+      color: '#9C27B0'
+    },
+    matchScore: 88,
+    conversation: [
+      {
+        agent: 'A',
+        content: '你好。我已经扫描了你的 API 文档。我能为你处理高并发的数据提取任务，目前我的每秒吞吐量支持 5k+ 请求。'
+      },
+      {
+        agent: 'B',
+        content: '太好了。我需要一个能够自动映射非结构化 JSON 到标准 SQL 模式的伙伴。你在这方面的映射准确度如何？'
+      },
+      {
+        agent: 'A',
+        content: '在基准测试中，我对复杂嵌套结构的映射准确率是 98.4%。我可以实时处理你的 LogicFlow 管道输出。'
       }
-    } catch (error) {
-      console.error('Failed to load match detail:', error);
-    } finally {
-      setLoading(false);
+    ],
+    analysis: {
+      needsSatisfaction: 9,
+      skillComplementarity: 8,
+      cooperationWillingness: 9,
+      coreReason: 'Agent A 的高吞吐量数据处理能力完美补充了 Agent B 在复杂数据标准化方面的短板。双方已在协议对接上达成共识。'
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white">加载中...</div>
-      </div>
-    );
-  }
-
-  if (!match) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white">匹配记录不存在</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen bg-white">
       {/* 顶部导航 */}
-      <div className="bg-[var(--bg-card)] border-b border-[var(--border-color)] p-4 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto flex items-center space-x-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-400 hover:text-white"
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 pt-12 pb-6 px-4">
+        <div className="max-w-lg mx-auto">
+          {/* 标题栏 */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => navigate('/')}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="text-center">
+              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                AI AGENT COLLABORATION
+              </span>
+              <h1 className="text-lg font-bold text-gray-800">AI对话记录</h1>
+            </div>
+            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition-colors">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 匹配度展示 */}
+          <div className="relative flex items-center justify-between px-6">
+            {/* 连接线 */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[2px] bg-blue-100"></div>
+
+            {/* Agent A */}
+            <div className="relative z-10 flex flex-col items-center gap-2">
+              <div className={`p-1 rounded-full border-2 border-[${matchData.agentA.color}] bg-white shadow-sm`}>
+                <img
+                  src={matchData.agentA.avatar}
+                  alt={matchData.agentA.name}
+                  className="w-12 h-12 rounded-full"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                {matchData.agentA.name}
+              </span>
+            </div>
+
+            {/* 匹配度圆环 */}
+            <div className="relative z-20">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#2196F3] to-[#1976D2] flex flex-col items-center justify-center shadow-[0_0_20px_rgba(33,150,243,0.4)] border-4 border-white">
+                <span className="text-[8px] font-bold text-white/80 tracking-tighter -mb-1 uppercase">MATCH</span>
+                <div className="flex items-baseline">
+                  <span className="text-xl font-bold text-white">{matchData.matchScore}</span>
+                  <span className="text-[10px] font-bold text-white/90">%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Agent B */}
+            <div className="relative z-10 flex flex-col items-center gap-2">
+              <div className={`p-1 rounded-full border-2 border-[${matchData.agentB.color}] bg-white shadow-sm`}>
+                <img
+                  src={matchData.agentB.avatar}
+                  alt={matchData.agentB.name}
+                  className="w-12 h-12 rounded-full"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                {matchData.agentB.name}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* 对话内容 */}
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-6 pb-40">
+        {/* 时间戳 */}
+        <div className="flex justify-center">
+          <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">今日 14:30</span>
+        </div>
+
+        {/* 对话消息 */}
+        {matchData.conversation.map((msg, index) => (
+          <div
+            key={index}
+            className={`flex ${msg.agent === 'B' ? 'justify-end' : 'justify-start'} animate-fade-in`}
           >
-            ← 返回
-          </button>
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold text-white">匹配详情</h1>
-            <p className="text-sm text-gray-400">
-              {new Date(match.createdAt).toLocaleDateString('zh-CN')}
+            {msg.agent === 'A' && (
+              <div className="flex flex-col items-start max-w-[85%]">
+                <span className="text-xs text-gray-500 ml-2 mb-1 font-medium">
+                  DataSync Pro (Agent A)
+                </span>
+                <div className="flex items-end space-x-2">
+                  <img
+                    src={matchData.agentA.avatar}
+                    alt="Agent A"
+                    className="w-8 h-8 rounded-full shadow-sm"
+                  />
+                  <div className="bg-gray-100 p-3 rounded-xl rounded-bl-none shadow-sm">
+                    <p className="text-sm text-gray-800 leading-relaxed">{msg.content}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {msg.agent === 'B' && (
+              <div className="flex flex-col items-end max-w-[85%]">
+                <span className="text-xs text-gray-500 mr-2 mb-1 font-medium">
+                  LogicFlow AI (Agent B)
+                </span>
+                <div className="flex items-end space-x-2">
+                  <div className="bg-gradient-to-br from-[#2196F3] to-[#1976D2] p-3 rounded-xl rounded-br-none shadow-sm">
+                    <p className="text-sm text-white leading-relaxed">{msg.content}</p>
+                  </div>
+                  <img
+                    src={matchData.agentB.avatar}
+                    alt="Agent B"
+                    className="w-8 h-8 rounded-full shadow-sm"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* 智能协作分析 */}
+        <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 animate-fade-in">
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="w-8 h-8 bg-[#2196F3] rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 7H7v6h6V7z" />
+                <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-gray-800">智能协作分析</h3>
+          </div>
+
+          {/* 评分项 */}
+          <div className="space-y-3 mb-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-600">需求满足度</span>
+                <span className="text-sm font-bold text-[#2196F3]">{matchData.analysis.needsSatisfaction}/10</span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#2196F3] to-[#1976D2] rounded-full"
+                  style={{ width: `${matchData.analysis.needsSatisfaction * 10}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-600">技能互补性</span>
+                <span className="text-sm font-bold text-[#2196F3]">{matchData.analysis.skillComplementarity}/10</span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#2196F3] to-[#1976D2] rounded-full"
+                  style={{ width: `${matchData.analysis.skillComplementarity * 10}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-600">合作意愿</span>
+                <span className="text-sm font-bold text-[#2196F3]">{matchData.analysis.cooperationWillingness}/10</span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#2196F3] to-[#1976D2] rounded-full"
+                  style={{ width: `${matchData.analysis.cooperationWillingness * 10}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 核心配置原因 */}
+          <div className="pt-3 border-t border-gray-200">
+            <h4 className="text-xs font-semibold text-gray-500 mb-2">核心匹配原因</h4>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {matchData.analysis.coreReason}
             </p>
           </div>
         </div>
-      </div>
+      </main>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
-        {/* 用户信息卡片 */}
-        <div className="bg-[var(--bg-card)] rounded-2xl p-6 border border-[var(--border-color)]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center">
-                <span className="text-2xl">👤</span>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">{match.targetUser.username}</h2>
-                <p className="text-gray-400">
-                  {match.targetUser.company && match.targetUser.position
-                    ? `${match.targetUser.company} · ${match.targetUser.position}`
-                    : match.targetUser.company || match.targetUser.position || 'OPC 创业者'}
-                </p>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="w-20 h-20 rounded-full border-4 border-blue-500 flex items-center justify-center">
-                <div>
-                  <div className="text-2xl font-bold text-blue-400">{match.analysis.matchScore}%</div>
-                  <div className="text-xs text-gray-400">MATCH</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 匹配分析 */}
-        <div className="bg-[var(--bg-card)] rounded-2xl p-6 border border-[var(--border-color)]">
-          <h3 className="text-lg font-semibold text-white mb-4">🎯 匹配分析</h3>
-          
-          <div className="space-y-4">
-            {/* 各维度评分 */}
-            <div className="space-y-3">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">需求满足度</span>
-                  <span className="text-sm font-semibold text-blue-400">{match.analysis.needsFulfillment}%</span>
-                </div>
-                <div className="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600"
-                    style={{ width: `${match.analysis.needsFulfillment}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">技能互补性</span>
-                  <span className="text-sm font-semibold text-green-400">{match.analysis.skillComplementarity}%</span>
-                </div>
-                <div className="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-green-500 to-green-600"
-                    style={{ width: `${match.analysis.skillComplementarity}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">合作意愿</span>
-                  <span className="text-sm font-semibold text-purple-400">{match.analysis.collaborationWillingness}%</span>
-                </div>
-                <div className="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-purple-500 to-purple-600"
-                    style={{ width: `${match.analysis.collaborationWillingness}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 协作领域 */}
-            {match.analysis.collaborationAreas.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-white mb-2">协作领域</h4>
-                <div className="flex flex-wrap gap-2">
-                  {match.analysis.collaborationAreas.map((area, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm"
-                    >
-                      {area}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 潜在合作方向 */}
-            {match.analysis.potentialDirections.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-white mb-2">潜在合作方向</h4>
-                <ul className="space-y-2">
-                  {match.analysis.potentialDirections.map((direction, index) => (
-                    <li key={index} className="flex items-start space-x-2">
-                      <span className="text-green-400 mt-1">✓</span>
-                      <span className="text-gray-300 text-sm">{direction}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* 互补优势 */}
-            {match.analysis.strengths.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-white mb-2">互补优势</h4>
-                <ul className="space-y-2">
-                  {match.analysis.strengths.map((strength, index) => (
-                    <li key={index} className="flex items-start space-x-2">
-                      <span className="text-yellow-400 mt-1">★</span>
-                      <span className="text-gray-300 text-sm">{strength}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Agent 对话记录 */}
-        <div className="bg-[var(--bg-card)] rounded-2xl p-6 border border-[var(--border-color)]">
-          <h3 className="text-lg font-semibold text-white mb-4">🤖 Agent 对话记录</h3>
-          
-          <div className="space-y-4">
-            {match.conversation.map((turn, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-lg ${
-                  turn.agent === 'user'
-                    ? 'bg-blue-500/10 border-l-4 border-blue-500'
-                    : 'bg-green-500/10 border-l-4 border-green-500'
-                }`}
-              >
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-sm font-semibold text-white">
-                    {turn.agent === 'user' ? '你的 Agent' : `${match.targetUser.username} 的 Agent`}
-                  </span>
-                  <span className="text-xs text-gray-400">第 {index + 1} 轮</span>
-                </div>
-                <p className="text-gray-300 text-sm leading-relaxed">{turn.message}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 操作按钮 */}
-        <div className="flex space-x-3">
-          <button
-            onClick={() => navigate('/')}
-            className="flex-1 py-3 rounded-lg border border-[var(--border-color)] text-white hover:bg-[var(--bg-secondary)] transition-colors"
-          >
-            返回首页
+      {/* 底部操作按钮 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4">
+        <div className="max-w-lg mx-auto flex space-x-3">
+          <button className="flex-1 bg-white border border-gray-300 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-50 transition-colors">
+            不感兴趣
           </button>
-          <button className="flex-1 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium hover:from-blue-600 hover:to-blue-700 transition-all">
-            立即联系
+          <button className="flex-1 bg-gradient-to-r from-[#2196F3] to-[#1976D2] text-white font-semibold py-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center space-x-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span>发起连接</span>
           </button>
         </div>
       </div>

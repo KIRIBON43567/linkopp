@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:8787' : '';
+const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:8787' : 'https://linkopp-api.web3linkerclub.workers.dev';
 
 export class ApiClient {
   private token: string | null = null;
