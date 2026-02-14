@@ -4,59 +4,77 @@ import { MatchProfile } from '../types';
 import { BottomNav } from '../components/BottomNav';
 import { useUser } from '../contexts/UserContext';
 import { AIDashboard } from '../components/AIDashboard';
-import { getDashboardData } from '../services/dashboardService';
 import { AIDashboardData } from '../types/dashboard';
-
-const MOCK_MATCHES: MatchProfile[] = [
-  {
-    id: '1',
-    name: '张伟',
-    role: '技术总监 (CTO)',
-    company: 'TechFlow',
-    avatar: 'https://picsum.photos/id/1/200/200',
-    matchScore: 94,
-    insight: '供应链 AI 领域高度重合。他的 Web3 技术背景完美互补您的项目缺口。',
-    status: 'new'
-  },
-  {
-    id: '2',
-    name: '李思敏',
-    role: '创始合伙人',
-    company: 'Nova Capital',
-    avatar: 'https://picsum.photos/id/64/200/200',
-    matchScore: 86,
-    insight: '她最近的投资赛道与您的产品高度一致。你们有 4 个共同好友。',
-    status: 'new'
-  },
-  {
-    id: '3',
-    name: '陈默',
-    role: '设计总监',
-    company: 'DesignX',
-    avatar: 'https://picsum.photos/id/91/200/200',
-    matchScore: 77,
-    insight: '在设计系统和品牌自动化方面经验丰富，适合您当前的品牌重塑计划。',
-    status: 'viewed'
-  }
-];
+import { matchesAPI, dashboardAPI } from '../src/services/apiClient';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const [dashboardData, setDashboardData] = useState<AIDashboardData | null>(null);
+  const [matches, setMatches] = useState<MatchProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 加载 AI 驾驶舱数据
-    const loadDashboard = async () => {
-      try {
-        const data = await getDashboardData(user.id);
-        setDashboardData(data);
-      } catch (error) {
-        console.error('Failed to load dashboard data:', error);
-      }
-    };
-    loadDashboard();
+    loadData();
   }, [user.id]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      // 加载驾驶舱数据
+      const statsResult = await dashboardAPI.getStats();
+      const insightsResult = await dashboardAPI.getInsights();
+      
+      setDashboardData({
+        stats: {
+          opportunitiesExplored: statsResult.stats.opportunities_explored || 0,
+          conversationsHeld: statsResult.stats.conversations_held || 0,
+          highPriorityMatches: statsResult.stats.high_priority_matches || 0,
+          meetingsScheduled: statsResult.stats.meetings_scheduled || 0,
+        },
+        insights: insightsResult.insights || []
+      });
+
+      // 加载匹配数据
+      let matchesResult = await matchesAPI.list({ limit: 20 });
+      
+      // 如果没有匹配记录，先计算匹配
+      if (!matchesResult.matches || matchesResult.matches.length === 0) {
+        await matchesAPI.calculate();
+        matchesResult = await matchesAPI.list({ limit: 20 });
+      }
+
+      // 转换为前端格式
+      const formattedMatches: MatchProfile[] = matchesResult.matches.map((m: any) => ({
+        id: m.id,
+        name: m.name,
+        role: m.agent_role || m.role,
+        company: m.agent_company || m.company,
+        avatar: m.agent_avatar || 'https://picsum.photos/200/200',
+        matchScore: m.match_score,
+        insight: m.match_reason || '高度匹配',
+        status: m.status || 'new'
+      }));
+
+      setMatches(formattedMatches);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#111827] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">加载中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#111827] text-white pb-20">
@@ -87,77 +105,94 @@ export const HomePage: React.FC = () => {
       <div className="px-6 mb-6">
         <div className="flex items-baseline gap-3">
           <h1 className="text-2xl font-bold animate-slide-up">推荐匹配</h1>
-          <span className="bg-[#1F2937] text-blue-400 text-xs px-2 py-0.5 rounded border border-blue-900/50 animate-slide-up">3 新增</span>
+          <span className="bg-[#1F2937] text-blue-400 text-xs px-2 py-0.5 rounded border border-blue-900/50 animate-slide-up">
+            {matches.filter(m => m.status === 'new').length} 新增
+          </span>
         </div>
         <p className="text-gray-400 text-sm mt-1 animate-slide-up delay-100">根据您的业务需求，AI 精选了最佳合作伙伴。</p>
       </div>
 
-      <div className="px-4 space-y-4">
-        {MOCK_MATCHES.map((match, index) => (
-          <div 
-            key={match.id} 
-            onClick={() => navigate(`/match/${match.id}`)} 
-            className="bg-[#1F2937] rounded-2xl p-5 border border-gray-700/50 shadow-xl cursor-pointer hover:bg-[#283546] transition-colors animate-slide-up"
-            style={{ animationDelay: `${(index + 2) * 100}ms` }}
+      {matches.length === 0 ? (
+        <div className="px-6 py-12 text-center">
+          <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+          <p className="text-gray-400">暂无匹配推荐</p>
+          <button 
+            onClick={loadData}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
-            {/* Card Header */}
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex gap-4">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-700">
-                    <img src={match.avatar} alt={match.name} className="w-full h-full object-cover" />
+            重新计算匹配
+          </button>
+        </div>
+      ) : (
+        <div className="px-4 space-y-4">
+          {matches.map((match, index) => (
+            <div 
+              key={match.id} 
+              onClick={() => navigate(`/match/${match.id}`)} 
+              className="bg-[#1F2937] rounded-2xl p-5 border border-gray-700/50 shadow-xl cursor-pointer hover:bg-[#283546] transition-colors animate-slide-up"
+              style={{ animationDelay: `${(index + 2) * 100}ms` }}
+            >
+              {/* Card Header */}
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex gap-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-700">
+                      <img src={match.avatar} alt={match.name} className="w-full h-full object-cover" />
+                    </div>
+                    {/* Status Indicator */}
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-[#1F2937] rounded-full"></div>
                   </div>
-                  {/* Status Indicator */}
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-[#1F2937] rounded-full"></div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{match.name}</h3>
+                    <p className="text-gray-400 text-sm">{match.company} • {match.role}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">{match.name}</h3>
-                  <p className="text-gray-400 text-sm">{match.company} • {match.role}</p>
-                </div>
-              </div>
 
-              {/* Match Score Circle */}
-              <div className="relative w-14 h-14 flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="28" cy="28" r="26" stroke="#374151" strokeWidth="4" fill="none" />
-                  <circle cx="28" cy="28" r="26" stroke="#3B82F6" strokeWidth="4" fill="none" strokeDasharray="163.36" strokeDashoffset={163.36 * (1 - match.matchScore / 100)} strokeLinecap="round" />
-                </svg>
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-sm font-bold leading-none">{match.matchScore}%</span>
-                  <span className="text-[8px] text-gray-500 uppercase">匹配度</span>
+                {/* Match Score Circle */}
+                <div className="relative w-14 h-14 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle cx="28" cy="28" r="26" stroke="#374151" strokeWidth="4" fill="none" />
+                    <circle cx="28" cy="28" r="26" stroke="#3B82F6" strokeWidth="4" fill="none" strokeDasharray="163.36" strokeDashoffset={163.36 * (1 - match.matchScore / 100)} strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute flex flex-col items-center">
+                    <span className="text-sm font-bold leading-none">{match.matchScore}%</span>
+                    <span className="text-[8px] text-gray-500 uppercase">匹配度</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* AI Insight Box */}
-            <div className="bg-[#18202F] rounded-xl p-4 mb-5 border-l-2 border-blue-500 relative overflow-hidden">
-               <div className="flex items-center gap-2 mb-2">
-                   <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" /></svg>
-                   <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">AI 洞察</span>
-               </div>
-               <p className="text-gray-300 text-sm italic leading-relaxed">
-                 "{match.insight}"
-               </p>
-            </div>
+              {/* AI Insight Box */}
+              <div className="bg-[#18202F] rounded-xl p-4 mb-5 border-l-2 border-blue-500 relative overflow-hidden">
+                 <div className="flex items-center gap-2 mb-2">
+                     <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" /></svg>
+                     <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">AI 洞察</span>
+                 </div>
+                 <p className="text-gray-300 text-sm italic leading-relaxed">
+                   "{match.insight}"
+                 </p>
+              </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/match/${match.id}`);
-                }}
-                className="bg-[#374151] hover:bg-[#4B5563] text-white py-3 rounded-lg text-sm font-semibold transition-colors"
-              >
-                查看对话
-              </button>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm font-semibold transition-colors">
-                立即连接
-              </button>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/match/${match.id}`);
+                  }}
+                  className="bg-[#374151] hover:bg-[#4B5563] text-white py-3 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  查看对话
+                </button>
+                <button className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm font-semibold transition-colors">
+                  立即连接
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Floating Action Button (FAB) - 场景选择 */}
       <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-40 animate-slide-up delay-300">
