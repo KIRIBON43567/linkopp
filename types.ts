@@ -10,6 +10,7 @@ export interface UserProfile {
 
 export interface MatchProfile {
   id: string;
+  agentId?: string; // Agent ID for dispatching
   name: string;
   role: string;
   company: string;

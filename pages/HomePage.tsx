@@ -122,6 +122,7 @@ export const HomePage: React.FC = () => {
         // 转换为前端格式
         const formattedMatches: MatchProfile[] = matchesResult.matches.map((m: any) => ({
           id: m.id,
+          agentId: m.agent_id, // 保存 agent_id 用于派遣
           name: m.name,
           role: m.agent_role || m.role,
           company: m.agent_company || m.company,
@@ -286,7 +287,7 @@ export const HomePage: React.FC = () => {
                 <button 
                   onClick={(e) => {
                       e.stopPropagation();
-                      handleDispatch(match.id, match.id.replace('match_', 'agent_'));
+                      handleDispatch(match.id, match.agentId || '');
                   }}
                   disabled={dispatchingId === match.id}
                   className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
